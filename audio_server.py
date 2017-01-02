@@ -37,14 +37,14 @@ def process_audio(shared_audio, shared_time, shared_pos, lock):
         # acquire lock
         lock.acquire()
 
+        # increment counter
+        shared_pos.value = (shared_pos.value + 1) % len(shared_time)
+
         # record current time
         shared_time[shared_pos.value] = current_time
 
         # record the maximum volume in this time slice
         shared_audio[shared_pos.value] = np.abs(audio).max()
-
-        # increment counter
-        shared_pos.value = (shared_pos.value + 1) % len(shared_time)
 
         # release lock
         lock.release()
@@ -163,7 +163,10 @@ def process_requests(shared_audio, shared_time, shared_pos, lock):
         str_crying = "Baby noise for "
         str_quiet = "Baby quiet for "
         if len(crying_blocks) == 0:
-            time_quiet = str_quiet + format_time_difference(time_stamps[0], time_current)
+            if time_stamps.size == 0:
+                time_quiet = str_quiet + "0 seconds"
+            else:
+                time_quiet = str_quiet + format_time_difference(time_stamps[0], time_current)
         else:
             if time_current - crying_blocks[-1]['stop'] < parameters['min_quiet_time']:
                 time_crying = str_crying + format_time_difference(crying_blocks[-1]['start'], time_current)
